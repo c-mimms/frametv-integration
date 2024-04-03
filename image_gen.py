@@ -59,8 +59,7 @@ def main() -> None:
     # Save the cropped image
     img_cropped.save("image_cropped.png")
 
-
-    # Upload a picture
+    # Upload image to FrameTV and set as current art
     tv = SamsungTVWS('192.168.1.21')
     file = open('image_cropped.png', 'rb')
     data = file.read()

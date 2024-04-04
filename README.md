@@ -19,3 +19,8 @@
     * Add Alexa integration to replace images on the fly
     * Schedule new images daily or multiple times a day
 
+
+
+# Libraries Used
+https://github.com/xchwarze/samsung-tv-ws-api
+https://github.com/marysieek/samsung-tv-api

@@ -63,12 +63,14 @@ def create_image_with_text(events):
     y = border
     font_path = '/Library/Fonts/Noteworthy.ttc'
     font_size = 80
+    day_font_size = 90
     event_spacing = 1.5
     day_spacing = 2.5
 
     # Load a TrueType or OpenType font file, and create a font object.
     # This step depends on the font file you have and the size of text you want
     fnt = ImageFont.truetype(font_path, font_size, 1)
+    day_font = ImageFont.truetype(font_path, day_font_size, 1)
 
     # Keep track of the maximum width and height
     max_width = 0
@@ -77,7 +79,11 @@ def create_image_with_text(events):
     # Group events by day
     events_by_day = {}
     for event in events:
-        day = event.start.date()
+        logging.info(event)
+        if isinstance(event.start, datetime):
+            day = event.start.date()
+        else:
+            day = event.start
         if day not in events_by_day:
             events_by_day[day] = []
         events_by_day[day].append(event)
@@ -92,11 +98,19 @@ def create_image_with_text(events):
             day_name = "Tomorrow"
         else:
             day_name = day.strftime('%A')
-        d.text((x, y), day_name, font=fnt, fill=(0, 0, 0, 255))
+        d.text((x, y), day_name, font=day_font, fill=(0, 0, 0, 255))
         for event in events:
+        # Check if the event start is a date or datetime
             y += event_spacing * font_size
-            event_text = f"    {event.start.strftime('%-I:%M %p')} - {event.summary}"
-            d.text((x, y), event_text, font=fnt, fill=(0, 0, 0, 255))
+            if isinstance(event.start, datetime):
+                event_text = f"    {event.start.strftime('%-I:%M %p')} - {event.summary}"
+                fill_color = (90, 90, 90, 255)
+            else:
+                event_text = f"  {event.summary}"
+
+            d.text((x, y), event_text, font=fnt, fill=fill_color)
+            fill_color = (60, 60, 155, 255)
+            
             event_width = d.textlength(event_text, font=fnt)
             max_width = max(max_width, event_width)
         
@@ -121,7 +135,7 @@ Apollo is a lovable yellow lab mix with a light orangish coat that radiates warm
 
 Astro:
 An energetic 6-month-old Brittany Spaniel/Great Pyrenees mix 8 month old young dog. Astro's coat is adorned with buff-colored spots, and freckles scatter playfully across his face and legs, giving him a uniquely endearing appearance. His almond-shaped eyes sparkle with curiosity and wonder, reflecting the boundless enthusiasm of youth. Astro is a bundle of joy and exuberance, always ready for adventure and eager to share his infectious zest for life with those around him."
-An illustration of Apollo and Astro playing together in the Scottish highlands. The image is beautifully composed, with both dogs located in the left third of the image, drawing your eyes but not distracting from the beautiful landscape stretching out behind them.
+An image of Apollo and Astro as they are staring off into the distance of the Scottish highlands. The dogs are facing away from the viewer, sitting on the left side of the image and looking towards the distance. The right part the image showcases the beautiful landscape stretching out in front of them.
 """
     img = generate_image(prompt)
     # Find a filename that doesn't exist and save the generated image

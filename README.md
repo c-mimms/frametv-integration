@@ -24,3 +24,7 @@
 # Libraries Used
 https://github.com/xchwarze/samsung-tv-ws-api
 https://github.com/marysieek/samsung-tv-api
+https://github.com/kuzmoyev/google-calendar-simple-api
+
+# Setup
+Create .env and credentials.json files with secrets. Credentials instructions are in the google-calendar library docs above. Make sure Frame TV has a static IP and update in art.py. According to [this](https://tavicu.github.io/homebridge-samsung-tizen/configuration/frame-tvs.html) the art mode api was removed from 2022+ Frame TVs so this will not work on those models.

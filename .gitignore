@@ -1,2 +1,5 @@
 .env
-image_cropped.png
+*.png
+credentials.json
+token.pickle
+__pycache__

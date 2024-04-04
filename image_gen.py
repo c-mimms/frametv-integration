@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 from dotenv import load_dotenv
 from openai import OpenAI
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import requests
 from io import BytesIO
-import sys
 import logging
-from samsungtvws import SamsungTVWS
 
-sys.path.append('../')
+# Local imports
+import art
+from cal import get_events_for_next_days
 
-# # Increase debug level
-logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
 # gets OPENAI_API_KEY from your environment variables
@@ -50,31 +48,94 @@ def resize_image(img: Image, new_width: int = 3840) -> Image:
 
     return img_cropped
 
+
+def create_image_with_text(events):
+    # Create a new image with white background
+    img = Image.new('RGBA', (3840, 2160), color = (255, 255, 255, 125))
+
+    d = ImageDraw.Draw(img)
+
+    # Starting position of the message
+    border = 20
+    x = border
+    y = border
+    font_path = '/Library/Fonts/Noteworthy.ttc'
+    font_size = 80
+    event_spacing = 1.5
+    day_spacing = 2.5
+
+    # Load a TrueType or OpenType font file, and create a font object.
+    # This step depends on the font file you have and the size of text you want
+    fnt = ImageFont.truetype(font_path, font_size, 1)
+
+    # Keep track of the maximum width and height
+    max_width = 0
+    max_height = 0
+
+    # Group events by day
+    events_by_day = {}
+    for event in events:
+        day = event.start.date()
+        if day not in events_by_day:
+            events_by_day[day] = []
+        events_by_day[day].append(event)
+
+    # Print events grouped by day
+    for day, events in events_by_day.items():
+        d.text((x, y), day.strftime('%A'), font=fnt, fill=(0, 0, 0, 255))
+        for event in events:
+            y += event_spacing * font_size
+            event_text = f"    {event.start.strftime('%-I:%M %p')} - {event.summary}"
+            d.text((x, y), event_text, font=fnt, fill=(0, 0, 0, 255))
+            event_width = d.textlength(event_text, font=fnt)
+            max_width = max(max_width, event_width)
+        
+        y += day_spacing * font_size
+        # Update the maximum height
+        max_height = max(max_height, y)
+
+    # Crop the image to fit the size of the text
+    img = img.crop((0, 0, max_width + 2 * border, max_height + border))
+
+    # Save the image
+    img.save('event_list.png', "PNG")
+
 def main() -> None:
+
+    # # Increase debug level
+    logging.basicConfig(level=logging.INFO)
+
     # Generate an image based on the prompt
-    prompt = """
-    Apollo:
-    A majestic 3-year-old Siberian Husky with a strikingly beautiful coat of black and white. His deep, ocean-blue eyes are filled with wisdom and tranquility. Apollo is a picture of grace and strength, embodying the spirit of the wild with his noble demeanor. He carries an air of mystery and adventure about him, as if he has many tales to tell from his journeys through the snow-covered forests of Siberia.
-    Astro:
-    An energetic 6-month-old Brittany Spaniel/Great Pyrenees mix puppy. Astro's coat is adorned with buff-colored spots, and freckles scatter playfully across his face and legs, giving him a uniquely endearing appearance. His almond-shaped eyes sparkle with curiosity and wonder, reflecting the boundless enthusiasm of youth. Astro is a bundle of joy and exuberance, always ready for adventure and eager to share his infectious zest for life with those around him."
-    An illustration of Apollo and Astro frolicking by a frozen lake in the middle of a Swedish winter.
-    """
+    prompt = """Apollo:
+Apollo is a lovable yellow lab mix with a light orangish coat that radiates warmth and charm. His gentle face shows traces of wisdom and a hint of gray, a testament to the experiences he's shared with his family. With a wagging tail and a heart full of kindness, Apollo is the epitome of a faithful and caring canine companion.
+
+Astro:
+An energetic 6-month-old Brittany Spaniel/Great Pyrenees mix 8 month old young dog. Astro's coat is adorned with buff-colored spots, and freckles scatter playfully across his face and legs, giving him a uniquely endearing appearance. His almond-shaped eyes sparkle with curiosity and wonder, reflecting the boundless enthusiasm of youth. Astro is a bundle of joy and exuberance, always ready for adventure and eager to share his infectious zest for life with those around him."
+An illustration of Apollo and Astro playing together in the Scottish highlands. They are located on the left side of the image, drawing your eyes with the beautiful landscape stretching out behind them and filling in the right side of the image.
+"""
     img = generate_image(prompt)
     img = resize_image(img)
 
     # Save the resized / cropped image
     img.save("image_cropped.png")
 
-    # Upload image to FrameTV and set as current art
-    tv = SamsungTVWS('192.168.1.21')
+    events = get_events_for_next_days(days=3)
+    create_image_with_text(events)
 
-    with open(file_path, 'rb') as file:
-        data = file.read()
+    image1 = Image.open('image_cropped.png').convert("RGBA")
+    image2 = Image.open('event_list.png').convert("RGBA")
 
-    name = tv.art().upload(data, matte="none")
-    logging.info(name)
+    # Calculate the position of the top right corner of the second image
+    position = (image1.width - image2.width, image1.height - image2.height)
 
-    tv.art().select_image(name)
+    # Paste image2 onto image1
+    image1.paste(image2, position, image2)
+
+    # Save the result
+    image1.save('overlay.png', 'PNG')
+
+    name = art.upload_image("overlay.png")
+    art.select_image(name)
 
 if __name__ == "__main__":
     main()

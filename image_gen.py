@@ -5,6 +5,8 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 from io import BytesIO
 import logging
+import os
+from datetime import datetime, timedelta
 
 # Local imports
 import art
@@ -57,7 +59,7 @@ def create_image_with_text(events):
 
     # Starting position of the message
     border = 20
-    x = border
+    x = border * 2
     y = border
     font_path = '/Library/Fonts/Noteworthy.ttc'
     font_size = 80
@@ -81,8 +83,16 @@ def create_image_with_text(events):
         events_by_day[day].append(event)
 
     # Print events grouped by day
+    today = datetime.now().date()
+    tomorrow = today + timedelta(days=1)
     for day, events in events_by_day.items():
-        d.text((x, y), day.strftime('%A'), font=fnt, fill=(0, 0, 0, 255))
+        if day == today:
+            day_name = "Today"
+        elif day == tomorrow:
+            day_name = "Tomorrow"
+        else:
+            day_name = day.strftime('%A')
+        d.text((x, y), day_name, font=fnt, fill=(0, 0, 0, 255))
         for event in events:
             y += event_spacing * font_size
             event_text = f"    {event.start.strftime('%-I:%M %p')} - {event.summary}"
@@ -98,7 +108,7 @@ def create_image_with_text(events):
     img = img.crop((0, 0, max_width + 2 * border, max_height + border))
 
     # Save the image
-    img.save('event_list.png', "PNG")
+    img.save('images/event_list.png', "PNG")
 
 def main() -> None:
 
@@ -111,19 +121,25 @@ Apollo is a lovable yellow lab mix with a light orangish coat that radiates warm
 
 Astro:
 An energetic 6-month-old Brittany Spaniel/Great Pyrenees mix 8 month old young dog. Astro's coat is adorned with buff-colored spots, and freckles scatter playfully across his face and legs, giving him a uniquely endearing appearance. His almond-shaped eyes sparkle with curiosity and wonder, reflecting the boundless enthusiasm of youth. Astro is a bundle of joy and exuberance, always ready for adventure and eager to share his infectious zest for life with those around him."
-An illustration of Apollo and Astro playing together in the Scottish highlands. They are located on the left side of the image, drawing your eyes with the beautiful landscape stretching out behind them and filling in the right side of the image.
+An illustration of Apollo and Astro playing together in the Scottish highlands. The image is beautifully composed, with both dogs located in the left third of the image, drawing your eyes but not distracting from the beautiful landscape stretching out behind them.
 """
     img = generate_image(prompt)
+    # Find a filename that doesn't exist and save the generated image
+    i = 1
+    while os.path.exists(f"images/image_gen_{i}.png"):
+        i += 1
+    img.save(f"images/image_gen_{i}.png")
+
     img = resize_image(img)
 
     # Save the resized / cropped image
-    img.save("image_cropped.png")
+    img.save("images/image_cropped.png")
 
     events = get_events_for_next_days(days=3)
     create_image_with_text(events)
 
-    image1 = Image.open('image_cropped.png').convert("RGBA")
-    image2 = Image.open('event_list.png').convert("RGBA")
+    image1 = Image.open('images/image_cropped.png').convert("RGBA")
+    image2 = Image.open('images/event_list.png').convert("RGBA")
 
     # Calculate the position of the top right corner of the second image
     position = (image1.width - image2.width, image1.height - image2.height)
@@ -132,9 +148,9 @@ An illustration of Apollo and Astro playing together in the Scottish highlands. 
     image1.paste(image2, position, image2)
 
     # Save the result
-    image1.save('overlay.png', 'PNG')
+    image1.save('images/overlay.png', 'PNG')
 
-    name = art.upload_image("overlay.png")
+    name = art.upload_image("images/overlay.png")
     art.select_image(name)
 
 if __name__ == "__main__":

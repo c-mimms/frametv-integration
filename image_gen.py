@@ -113,7 +113,8 @@ def create_image_with_text(events):
             else:
                 event_text = f"  {event.summary}"
 
-            fill_color = (160, 160, 255, 255)
+            # fill_color = (160, 160, 255, 255)
+            fill_color = (0, 0, 0, 255)
             d.text((x, y), event_text, font=fnt, fill=fill_color)
             
             event_width = d.textlength(event_text, font=fnt)
@@ -197,6 +198,7 @@ def create_forecast_image(forecast):
         elif weather_code == 95:
             icon = "⛈️"
         else:
+            print(f"Unknown weather code: {weather_code}")
             icon = "❓"
         
         #Horizontal line
@@ -351,6 +353,7 @@ def main() -> None:
 
     # Delete previous active image if it matched a previous image
     if content_id in previous_images:
+        print(f"Deleting previous image {content_id}")
         art.delete_image(content_id)
 
 if __name__ == "__main__":
